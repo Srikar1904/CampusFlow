@@ -30,10 +30,10 @@ const userSchema = new mongoose.Schema(
     },
 
     department: {
-  type: String,
-  required: true,
-  trim: true,
-},
+      type: String,
+      required: true,
+      trim: true,
+    },
 
     year: {
       type: Number,
@@ -49,6 +49,12 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       trim: true,
+    },
+
+    // ADMIN ACCOUNT CONTROL
+    isFrozen: {
+      type: Boolean,
+      default: false,
     },
   },
   {

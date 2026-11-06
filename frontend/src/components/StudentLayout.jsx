@@ -13,14 +13,15 @@ function StudentLayout() {
   }
 
   const menuItems = [
-    { icon: "⌂", label: "Dashboard", path: "/student-dashboard" },
-    { icon: "▦", label: "View Events", path: "/view-events" },
-    { icon: "＋", label: "Apply for OD", path: "/apply-od" },
-    { icon: "◷", label: "OD Status", path: "/od-status" },
-    { icon: "✓", label: "Approvals", path: "/approvals" },
-    { icon: "♙", label: "My Profile", path: "/my-profile" },
-  ];
-
+  { icon: "⌂", label: "Dashboard", path: "/student-dashboard" },
+  { icon: "▦", label: "View Events", path: "/view-events" },
+  { icon: "✦", label: "Create Event", path: "/create-event" },
+  { icon: "＋", label: "Apply for OD", path: "/apply-od" },
+  { icon: "◷", label: "OD Status", path: "/od-status" },
+  { icon: "✓", label: "Approvals", path: "/approvals" },
+  { icon: "♙", label: "My Profile", path: "/my-profile" },
+  { icon: "▤", label: "My Events", path: "/my-events" },
+];
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");

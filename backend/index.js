@@ -10,7 +10,8 @@ const studentRoutes = require("./routes/studentRoutes");
 const facultyRoutes = require("./routes/facultyRoutes");
 const eventRoutes = require("./routes/eventRoutes");
 const odRoutes = require("./routes/odRoutes");
-
+const adminRoutes = require("./routes/adminRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 const app = express();
 
 connectDB();
@@ -22,6 +23,8 @@ app.use("/api/student", studentRoutes);
 app.use("/api/faculty", facultyRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/od", odRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.get("/", (req, res) => {
   res.send("CampusFlow Backend is running!");

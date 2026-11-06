@@ -7,6 +7,10 @@ const Event = require("../models/Event");
 const User = require("../models/User");
 const Faculty = require("../models/Faculty");
 const Approval = require("../models/Approval");
+const {
+  createNotification,
+  notifyDepartmentFaculty
+} = require("../utils/notificationService");
 
 const authMiddleware = require("../middleware/authMiddleware");
 
@@ -45,6 +49,15 @@ router.post("/apply", authMiddleware, async (req, res) => {
       date,
       status: "pending"
     });
+    const student = await User.findById(req.user.id);
+
+await notifyDepartmentFaculty({
+  department: student.department,
+  title: "New OD Application",
+  message: `${student.name} submitted an OD application for ${event.title}.`,
+  type: "od",
+  relatedId: od._id
+});
 
     res.status(201).json({
       message: "OD application submitted successfully",
@@ -224,7 +237,8 @@ router.patch(
       }
 
       const od = await OD.findById(req.params.odId)
-        .populate("studentId", "department name");
+  .populate("studentId", "department name")
+  .populate("eventId", "title");
 
       if (!od) {
         return res.status(404).json({
@@ -233,11 +247,21 @@ router.patch(
       }
 
       // Faculty can only decide requests from their department
-      if (od.studentId.department !== faculty.department) {
-        return res.status(403).json({
-          message: "You cannot process another department's OD request"
-        });
-      }
+      const studentDepartment = (od.studentId.department || "")
+  .trim()
+  .toUpperCase();
+
+const facultyDepartment = (faculty.department || "")
+  .trim()
+  .toUpperCase();
+
+if (studentDepartment !== facultyDepartment) {
+  return res.status(403).json({
+    message: "You cannot process another department's OD request",
+    studentDepartment,
+    facultyDepartment
+  });
+}
 
       if (od.status !== "pending") {
         return res.status(400).json({
@@ -258,19 +282,32 @@ router.patch(
         remarks: remarks || "",
         approvedAt: new Date()
       });
-
+await createNotification({
+  recipientId: od.studentId._id,
+  recipientRole: "student",
+  title: status === "approved"
+    ? "OD Application Approved"
+    : "OD Application Rejected",
+  message: `Your OD application for ${
+    od.eventId ? od.eventId.title : "the event"
+  } has been ${status}. ${remarks ? "Remarks: " + remarks : ""}`,
+  type: "od",
+  relatedId: od._id
+});
       res.status(200).json({
         message: `OD application ${status} successfully`,
         od,
         approval
       });
 
-    } catch (error) {
-      res.status(500).json({
-        message: "Failed to process OD application",
-        error: error.message
-      });
-    }
+    }  catch (error) {
+  console.error("Faculty OD decision error:", error);
+
+  res.status(500).json({
+    message: "Failed to process OD application",
+    error: error.message
+  });
+}
   }
 );
 // ======================================

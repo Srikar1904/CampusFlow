@@ -162,6 +162,15 @@ function FacultyDashboard() {
               <p>View your faculty account information.</p>
               <span>View Profile →</span>
             </div>
+            <div
+  className="faculty-action-card"
+  onClick={() => navigate("/faculty-create-event")}
+>
+  <div className="faculty-action-icon">✦</div>
+  <h3>Create Event</h3>
+  <p>Organize a new college event and submit it for approval.</p>
+  <span>Create Event →</span>
+</div>
 
           </div>
 

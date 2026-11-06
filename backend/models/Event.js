@@ -5,39 +5,53 @@ const eventSchema = new mongoose.Schema(
     title: {
       type: String,
       required: true,
-      trim: true,
+      trim: true
     },
 
     description: {
       type: String,
-      required: true,
-      trim: true,
+      required: true
     },
 
     date: {
       type: Date,
-      required: true,
+      required: true
     },
 
     time: {
       type: String,
-      required: true,
+      required: true
     },
 
     venue: {
       type: String,
-      required: true,
-      trim: true,
+      required: true
     },
 
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+      required: true
     },
+
+    organizerRole: {
+      type: String,
+      enum: ["student", "faculty"],
+      required: true
+    },
+
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending"
+    },
+
+    adminRemarks: {
+      type: String,
+      default: ""
+    }
   },
   {
-    timestamps: true,
+    timestamps: true
   }
 );
 

@@ -19,8 +19,15 @@ import MyProfile from "./pages/MyProfile";
 import FacultyDashboard from "./pages/FacultyDashboard";
 import FacultyODRequests from "./pages/FacultyODRequests";
 import FacultyProfile from "./pages/FacultyProfile";
-
+import FacultyRegister from "./pages/FacultyRegister";
+import AdminRegister from "./pages/AdminRegister";
+import AdminDashboard from "./pages/AdminDashboard";
+import CreateEvent from "./pages/CreateEvent";
 import StudentLayout from "./components/StudentLayout";
+import FacultyLayout from "./components/FacultyLayout";
+import MyEvents from "./pages/MyEvents";
+import { NotificationProvider } from "./components/NotificationContext";
+import GlobalNotification from "./components/GlobalNotification";
 
 import "./App.css";
 
@@ -42,19 +49,17 @@ function Login() {
       return;
     }
 
-    if (role === "admin") {
-      setMessage("Admin login is not implemented yet");
-      return;
-    }
-
+    
     try {
       setLoading(true);
       setMessage("");
 
       const endpoint =
-        role === "student"
-          ? "http://localhost:5001/api/student/login"
-          : "http://localhost:5001/api/faculty/login";
+  role === "student"
+    ? "http://localhost:5001/api/student/login"
+    : role === "faculty"
+    ? "http://localhost:5001/api/faculty/login"
+    : "http://localhost:5001/api/admin/login";
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -70,7 +75,7 @@ function Login() {
         throw new Error(data.message || "Login failed");
       }
 
-      const loggedInUser = data.user || data.faculty;
+      const loggedInUser = data.user || data.faculty || data.admin;
 
       localStorage.setItem("token", data.token);
 
@@ -82,11 +87,13 @@ function Login() {
         })
       );
 
-      navigate(
-        role === "student"
-          ? "/student-dashboard"
-          : "/faculty-dashboard"
-      );
+     navigate(
+  role === "student"
+    ? "/student-dashboard"
+    : role === "faculty"
+    ? "/faculty-dashboard"
+    : "/admin-dashboard"
+);
 
     } catch (error) {
       setMessage(error.message);
@@ -271,10 +278,23 @@ function Login() {
           </form>
 
           <div className="cf-login-register">
-            Don't have a student account?
-            <Link to="/student-register"> Create Account</Link>
-          </div>
-
+  {role === "faculty" ? (
+    <>
+      Don't have a faculty account?
+      <Link to="/faculty-register"> Create Faculty Account</Link>
+    </>
+  ) : role === "admin" ? (
+    <>
+      Need an admin account?
+      <Link to="/admin-register"> Register as Admin</Link>
+    </>
+  ) : (
+    <>
+      Don't have a student account?
+      <Link to="/student-register"> Create Student Account</Link>
+    </>
+  )}
+</div>
           <div className="cf-login-security">
             <span>🔐</span>
             Your account information is securely protected.
@@ -292,6 +312,8 @@ function Login() {
 function App() {
   return (
     <BrowserRouter>
+<NotificationProvider>
+    <GlobalNotification />
 
       <Routes>
 
@@ -303,10 +325,21 @@ function App() {
           path="/student-register"
           element={<StudentRegister />}
         />
-
+        <Route
+          path="/admin-register"
+          element={<AdminRegister />}
+        />
+        <Route
+  path="/admin-dashboard"
+  element={<AdminDashboard />}
+/>
         {/* STUDENT PAGES */}
 
         <Route element={<StudentLayout />}>
+        <Route
+  path="/my-events"
+  element={<MyEvents />}
+/>
 
           <Route
             path="/student-dashboard"
@@ -317,7 +350,10 @@ function App() {
             path="/view-events"
             element={<ViewEvents />}
           />
-
+          <Route
+  path="/create-event"
+  element={<CreateEvent />}
+/>
           <Route
             path="/apply-od"
             element={<ApplyOD />}
@@ -339,23 +375,42 @@ function App() {
           />
 
         </Route>
+{/* FACULTY PAGES */}
 
-        {/* FACULTY PAGE - WITHOUT STUDENT LAYOUT */}
+<Route element={<FacultyLayout />}>
+<Route
+  path="/faculty-my-events"
+  element={<MyEvents />}
+/>
+  <Route
+    path="/faculty-dashboard"
+    element={<FacultyDashboard />}
+  />
 
-        <Route
-          path="/faculty-dashboard"
-          element={<FacultyDashboard />}
-        />
-        <Route
-  path="/faculty-od-requests"
-  element={<FacultyODRequests />}
+  <Route
+    path="/faculty-create-event"
+    element={<CreateEvent />}
+  />
+
+  <Route
+    path="/faculty-od-requests"
+    element={<FacultyODRequests />}
+  />
+
+  <Route
+    path="/faculty-profile"
+    element={<FacultyProfile />}
+  />
+
+</Route>
+
+<Route
+  path="/faculty-register"
+  element={<FacultyRegister />}
 />
-        <Route
-  path="/faculty-profile"
-  element={<FacultyProfile />}
-/>
+
       </Routes>
-
+</NotificationProvider>
     </BrowserRouter>
   );
 }

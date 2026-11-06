@@ -4,7 +4,11 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
-// Student Registration
+
+// ======================================
+// STUDENT REGISTRATION
+// ======================================
+
 router.post("/register", async (req, res) => {
   try {
     const {
@@ -18,9 +22,31 @@ router.post("/register", async (req, res) => {
       phone,
     } = req.body;
 
-    // Check whether student already exists
+    if (
+      !name ||
+      !email ||
+      !password ||
+      !registrationNumber ||
+      !department ||
+      !year ||
+      !section
+    ) {
+      return res.status(400).json({
+        message: "Please fill all required fields",
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        message: "Password must contain at least 6 characters",
+      });
+    }
+
     const existingUser = await User.findOne({
-      $or: [{ email }, { registrationNumber }],
+      $or: [
+        { email: email.toLowerCase() },
+        { registrationNumber },
+      ],
     });
 
     if (existingUser) {
@@ -29,10 +55,8 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create student
     const user = await User.create({
       name,
       email,
@@ -53,20 +77,29 @@ router.post("/register", async (req, res) => {
         registrationNumber: user.registrationNumber,
       },
     });
+
   } catch (error) {
+    console.error("Student registration error:", error);
+
     res.status(500).json({
       message: "Registration failed",
       error: error.message,
     });
   }
 });
-// Student Login
+
+
+// ======================================
+// STUDENT LOGIN
+// ======================================
+
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find student by email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({
+      email: email?.toLowerCase(),
+    });
 
     if (!user) {
       return res.status(400).json({
@@ -74,42 +107,62 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Compare entered password with hashed password
-    const isMatch = await bcrypt.compare(password, user.password);
+    // CHECK FROZEN ACCOUNT
+    if (user.isFrozen) {
+      return res.status(403).json({
+        message:
+          "Your account has been frozen by the administrator. Please contact the college administration.",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(
+      password,
+      user.password
+    );
 
     if (!isMatch) {
       return res.status(400).json({
         message: "Invalid email or password",
       });
     }
-const token = jwt.sign(
-  {
-    id: user._id,
-    role: "student",
-  },
-  process.env.JWT_SECRET,
-  {
-    expiresIn: "1d",
-  }
-);
+
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: "student",
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1d",
+      }
+    );
+
     res.status(200).json({
-  message: "Student login successful",
-  token,
-  user: {
-    id: user._id,
-    name: user.name,
-    email: user.email,
-    registrationNumber: user.registrationNumber,
-  },
-});
+      message: "Student login successful",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        registrationNumber: user.registrationNumber,
+      },
+    });
+
   } catch (error) {
+    console.error("Student login error:", error);
+
     res.status(500).json({
       message: "Login failed",
       error: error.message,
     });
   }
 });
-// Get Student Profile
+
+
+// ======================================
+// GET STUDENT PROFILE
+// ======================================
+
 router.get("/profile", authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== "student") {
@@ -118,7 +171,8 @@ router.get("/profile", authMiddleware, async (req, res) => {
       });
     }
 
-    const student = await User.findById(req.user.id).select("-password");
+    const student = await User.findById(req.user.id)
+      .select("-password");
 
     if (!student) {
       return res.status(404).json({
@@ -126,10 +180,17 @@ router.get("/profile", authMiddleware, async (req, res) => {
       });
     }
 
+    if (student.isFrozen) {
+      return res.status(403).json({
+        message: "Your account has been frozen by the administrator.",
+      });
+    }
+
     res.status(200).json({
       message: "Profile fetched successfully",
       student,
     });
+
   } catch (error) {
     res.status(500).json({
       message: "Failed to fetch profile",
@@ -138,7 +199,11 @@ router.get("/profile", authMiddleware, async (req, res) => {
   }
 });
 
-// Update Student Profile
+
+// ======================================
+// UPDATE STUDENT PROFILE
+// ======================================
+
 router.put("/profile", authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== "student") {
@@ -147,13 +212,25 @@ router.put("/profile", authMiddleware, async (req, res) => {
       });
     }
 
-    const { name, department, year, section, phone } = req.body;
+    const {
+      name,
+      department,
+      year,
+      section,
+      phone,
+    } = req.body;
 
     const student = await User.findById(req.user.id);
 
     if (!student) {
       return res.status(404).json({
         message: "Student not found",
+      });
+    }
+
+    if (student.isFrozen) {
+      return res.status(403).json({
+        message: "Your account has been frozen by the administrator.",
       });
     }
 
@@ -178,6 +255,7 @@ router.put("/profile", authMiddleware, async (req, res) => {
         phone: student.phone,
       },
     });
+
   } catch (error) {
     res.status(500).json({
       message: "Failed to update profile",
@@ -185,4 +263,5 @@ router.put("/profile", authMiddleware, async (req, res) => {
     });
   }
 });
+
 module.exports = router;
